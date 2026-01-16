@@ -1,0 +1,580 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VET-AQUA MIX | Phần Mềm Phối Trộn Thức Ăn Chăn Nuôi & Thủy Sản</title>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <style>
+        /* Animation cho các con vật */
+        @keyframes walk-right {
+            0% { transform: translateX(-100px); }
+            100% { transform: translateX(100vw); }
+        }
+        
+        @keyframes swim-left {
+            0% { transform: translateX(100vw) scaleX(-1); }
+            100% { transform: translateX(-100px) scaleX(-1); }
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+
+        .animal-track {
+            position: absolute;
+            width: 100%;
+            overflow: hidden;
+            pointer-events: none;
+        }
+
+        .animal {
+            position: absolute;
+            font-size: 3rem;
+            filter: drop-shadow(2px 4px 6px rgba(0,0,0,0.2));
+        }
+
+        .walk-pig { animation: walk-right 25s linear infinite; bottom: 10px; }
+        .walk-chicken { animation: walk-right 35s linear infinite; animation-delay: 5s; bottom: 15px; font-size: 2rem; }
+        .swim-fish { animation: swim-left 20s linear infinite; top: 20px; }
+        .swim-shrimp { animation: swim-left 28s linear infinite; animation-delay: 2s; top: 60px; font-size: 2rem; }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #f1f1f1; }
+        ::-webkit-scrollbar-thumb { background: #888; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #555; }
+
+        .tab-active {
+            border-bottom: 3px solid #0ea5e9;
+            color: #0ea5e9;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body class="bg-gray-50 text-gray-800 font-sans min-h-screen flex flex-col">
+
+    <!-- Header & Animation Area -->
+    <header class="bg-gradient-to-b from-sky-400 to-sky-200 text-white relative h-48 overflow-hidden shadow-lg">
+        <div class="container mx-auto px-4 py-6 relative z-10">
+            <h1 class="text-3xl md:text-4xl font-extrabold drop-shadow-md text-center">VET-AQUA MIX PRO</h1>
+            <p class="text-center text-blue-900 mt-2 font-medium">Giải pháp phối trộn thức ăn dinh dưỡng chuẩn khoa học</p>
+        </div>
+
+        <!-- Animated Animals Layer -->
+        <!-- Sky/Land Animals -->
+        <div class="animal-track h-24 bottom-0 bg-green-300 absolute w-full border-t-4 border-green-500">
+            <div class="animal walk-pig">🐖</div>
+            <div class="animal walk-chicken">🐓</div>
+            <div class="animal walk-pig" style="animation-delay: 12s; font-size: 2.5rem;">🐄</div>
+        </div>
+        <!-- Water Animals (Background) -->
+        <div class="animal-track h-24 top-10 absolute w-full opacity-60">
+            <div class="animal swim-fish">🐟</div>
+            <div class="animal swim-shrimp">🦐</div>
+            <div class="animal swim-fish" style="animation-delay: 10s; top: 40px; color: blue;">🐬</div>
+        </div>
+    </header>
+
+    <!-- Navigation -->
+    <nav class="bg-white shadow sticky top-0 z-50">
+        <div class="container mx-auto px-4">
+            <div class="flex space-x-8 overflow-x-auto">
+                <button onclick="switchTab('mix')" id="tab-mix" class="py-4 px-2 tab-active transition-colors hover:text-sky-600">
+                    🧬 Phối Trộn Công Thức
+                </button>
+                <button onclick="switchTab('price')" id="tab-price" class="py-4 px-2 transition-colors hover:text-sky-600 border-b-3 border-transparent">
+                    💰 Cập Nhật Giá Nguyên Liệu
+                </button>
+                <button onclick="switchTab('info')" id="tab-info" class="py-4 px-2 transition-colors hover:text-sky-600 border-b-3 border-transparent">
+                    ℹ️ Thông Tin Khoa Học
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="flex-grow container mx-auto px-4 py-6">
+
+        <!-- TAB: Phối Trộn (MIX) -->
+        <div id="content-mix" class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+            
+            <!-- Left: Settings & Ingredient Selection -->
+            <div class="lg:col-span-3 space-y-6">
+                <div class="bg-white p-4 rounded-lg shadow border border-gray-200">
+                    <h3 class="font-bold text-lg text-gray-700 mb-3 border-b pb-2">1. Đối Tượng Nuôi</h3>
+                    <div class="space-y-3">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-600">Loài vật</label>
+                            <select id="animalSelect" onchange="updateRequirements()" class="w-full mt-1 border-gray-300 rounded-md shadow-sm focus:border-sky-500 focus:ring focus:ring-sky-200 p-2 border">
+                                <option value="piglet">Heo Con (15-30kg)</option>
+                                <option value="pig_grower">Heo Thịt (30-60kg)</option>
+                                <option value="broiler">Gà Thịt (0-3 tuần)</option>
+                                <option value="pangasius">Cá Tra (Giống)</option>
+                                <option value="shrimp">Tôm Thẻ (Post)</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-600">Tổng trọng lượng phối (kg)</label>
+                            <input type="number" id="batchSize" value="1000" onchange="calculateMix()" class="w-full mt-1 border-gray-300 rounded-md shadow-sm p-2 border">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-white p-4 rounded-lg shadow border border-gray-200">
+                    <h3 class="font-bold text-lg text-gray-700 mb-3 border-b pb-2">2. Thư Viện Nguyên Liệu</h3>
+                    <p class="text-xs text-gray-500 mb-2">Nhấn để thêm vào công thức</p>
+                    <div id="ingredientLibrary" class="h-64 overflow-y-auto space-y-2 pr-2">
+                        <!-- Dynamic Ingredients List generated by JS -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Center: Mixing Console -->
+            <div class="lg:col-span-6">
+                <div class="bg-white p-4 rounded-lg shadow border border-gray-200 min-h-[600px]">
+                    <div class="flex justify-between items-center mb-4 border-b pb-2">
+                        <h3 class="font-bold text-lg text-sky-700">Công Thức Phối Trộn</h3>
+                        <span id="totalPercent" class="font-bold text-red-500">Tổng: 0%</span>
+                    </div>
+
+                    <div class="bg-yellow-50 p-3 mb-4 text-sm text-yellow-800 rounded border border-yellow-200">
+                        💡 Điều chỉnh tỷ lệ % để đạt cân bằng dinh dưỡng. Tổng tỷ lệ phải là 100%.
+                    </div>
+
+                    <table class="w-full text-sm text-left">
+                        <thead class="bg-gray-100 text-gray-600 uppercase">
+                            <tr>
+                                <th class="px-3 py-2">Nguyên liệu</th>
+                                <th class="px-3 py-2 w-24">Tỷ lệ (%)</th>
+                                <th class="px-3 py-2 w-24">Kg / Mẻ</th>
+                                <th class="px-3 py-2 w-24">Giá (đ)</th>
+                                <th class="px-3 py-2 w-10"></th>
+                            </tr>
+                        </thead>
+                        <tbody id="mixTableBody">
+                            <!-- Selected ingredients will appear here -->
+                        </tbody>
+                    </table>
+
+                    <div id="emptyState" class="text-center py-10 text-gray-400">
+                        Chưa có nguyên liệu nào được chọn. <br> Chọn từ danh sách bên trái.
+                    </div>
+                    
+                    <div class="mt-6 border-t pt-4">
+                        <div class="flex justify-between items-end">
+                            <div class="space-x-2">
+                                <button onclick="window.print()" class="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded shadow text-sm">
+                                    🖨️ In Phiếu
+                                </button>
+                                <button onclick="clearAll()" class="bg-red-100 hover:bg-red-200 text-red-700 px-4 py-2 rounded shadow text-sm">
+                                    🗑️ Xóa Hết
+                                </button>
+                            </div>
+                            <div class="flex space-x-6">
+                                <div class="text-right">
+                                    <p class="text-gray-600">Chi phí / kg:</p>
+                                    <p class="text-2xl font-bold text-green-600" id="costPerKg">0 đ</p>
+                                </div>
+                                <div class="text-right">
+                                    <p class="text-gray-600">Tổng chi phí mẻ:</p>
+                                    <p class="text-xl font-bold text-gray-800" id="totalBatchCost">0 đ</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right: Analysis & Standards -->
+            <div class="lg:col-span-3 space-y-6">
+                <div class="bg-white p-4 rounded-lg shadow border border-gray-200">
+                    <h3 class="font-bold text-lg text-gray-700 mb-3 border-b pb-2">Phân Tích Dinh Dưỡng</h3>
+                    
+                    <!-- Protein Chart -->
+                    <div class="mb-4">
+                        <div class="flex justify-between text-sm mb-1">
+                            <span>Protein Thô (CP)</span>
+                            <span id="label-cp">0% / 0%</span>
+                        </div>
+                        <div class="w-full bg-gray-200 rounded-full h-4 relative">
+                            <div id="bar-cp" class="bg-blue-600 h-4 rounded-full transition-all duration-500" style="width: 0%"></div>
+                            <div id="marker-cp" class="absolute top-0 w-1 h-6 -mt-1 bg-red-500 transition-all duration-500 border border-white shadow" style="left: 0%"></div>
+                        </div>
+                    </div>
+
+                    <!-- Energy Chart -->
+                    <div class="mb-4">
+                        <div class="flex justify-between text-sm mb-1">
+                            <span>Năng lượng (ME/DE)</span>
+                            <span id="label-me">0 / 0 Kcal</span>
+                        </div>
+                        <div class="w-full bg-gray-200 rounded-full h-4 relative">
+                            <div id="bar-me" class="bg-yellow-500 h-4 rounded-full transition-all duration-500" style="width: 0%"></div>
+                            <div id="marker-me" class="absolute top-0 w-1 h-6 -mt-1 bg-red-500 transition-all duration-500 border border-white shadow" style="left: 0%"></div>
+                        </div>
+                    </div>
+
+                    <!-- Lysine Chart -->
+                    <div class="mb-4">
+                        <div class="flex justify-between text-sm mb-1">
+                            <span>Lysine</span>
+                            <span id="label-lys">0% / 0%</span>
+                        </div>
+                        <div class="w-full bg-gray-200 rounded-full h-4 relative">
+                            <div id="bar-lys" class="bg-green-500 h-4 rounded-full transition-all duration-500" style="width: 0%"></div>
+                            <div id="marker-lys" class="absolute top-0 w-1 h-6 -mt-1 bg-red-500 transition-all duration-500 border border-white shadow" style="left: 0%"></div>
+                        </div>
+                    </div>
+
+                    <!-- Calcium Chart -->
+                    <div class="mb-4">
+                        <div class="flex justify-between text-sm mb-1">
+                            <span>Canxi (Ca)</span>
+                            <span id="label-ca">0% / 0%</span>
+                        </div>
+                        <div class="w-full bg-gray-200 rounded-full h-4 relative">
+                            <div id="bar-ca" class="bg-gray-500 h-4 rounded-full transition-all duration-500" style="width: 0%"></div>
+                            <div id="marker-ca" class="absolute top-0 w-1 h-6 -mt-1 bg-red-500 transition-all duration-500 border border-white shadow" style="left: 0%"></div>
+                        </div>
+                    </div>
+
+                     <!-- Phosphorus Chart -->
+                     <div class="mb-4">
+                        <div class="flex justify-between text-sm mb-1">
+                            <span>Phốt pho (P)</span>
+                            <span id="label-p">0% / 0%</span>
+                        </div>
+                        <div class="w-full bg-gray-200 rounded-full h-4 relative">
+                            <div id="bar-p" class="bg-purple-500 h-4 rounded-full transition-all duration-500" style="width: 0%"></div>
+                            <div id="marker-p" class="absolute top-0 w-1 h-6 -mt-1 bg-red-500 transition-all duration-500 border border-white shadow" style="left: 0%"></div>
+                        </div>
+                    </div>
+
+                    <div class="text-xs text-gray-500 mt-4 italic text-center">
+                        * Vạch đỏ là nhu cầu khuyến nghị (Tiêu chuẩn Việt Nam/NRC).
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB: Cập Nhật Giá (PRICE) -->
+        <div id="content-price" class="hidden container mx-auto max-w-4xl">
+            <div class="bg-white p-6 rounded-lg shadow border border-gray-200">
+                <h2 class="text-2xl font-bold text-gray-800 mb-4 flex items-center">
+                    <span class="mr-2">📈</span> Quản Lý Giá Nguyên Liệu
+                </h2>
+                <p class="mb-6 text-gray-600">Cập nhật giá thị trường để tính toán chi phí chính xác nhất. Dữ liệu được lưu trữ tạm thời.</p>
+                
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse">
+                        <thead class="bg-gray-100 text-gray-700">
+                            <tr>
+                                <th class="p-3 border">Tên Nguyên Liệu</th>
+                                <th class="p-3 border">Đạm (%)</th>
+                                <th class="p-3 border">Năng lượng (Kcal)</th>
+                                <th class="p-3 border">Giá hiện tại (đ/kg)</th>
+                                <th class="p-3 border w-40">Cập nhật giá</th>
+                            </tr>
+                        </thead>
+                        <tbody id="priceTableBody">
+                            <!-- Rows generated by JS -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB: Thông Tin (INFO) -->
+        <div id="content-info" class="hidden container mx-auto max-w-4xl">
+            <div class="bg-white p-8 rounded-lg shadow border border-gray-200">
+                <h2 class="text-2xl font-bold text-sky-800 mb-4">Giới thiệu Hệ Thống</h2>
+                <p class="mb-4 text-gray-700 leading-relaxed">
+                    Website được xây dựng dựa trên nhu cầu thực tế của các chuyên gia dinh dưỡng và người chăn nuôi.
+                    Chúng tôi sử dụng cơ sở dữ liệu dinh dưỡng từ <strong>NRC (National Research Council)</strong> và 
+                    <strong>Tiêu chuẩn Việt Nam (TCVN)</strong> về thức ăn chăn nuôi.
+                </p>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
+                    <div class="bg-blue-50 p-4 rounded border border-blue-100">
+                        <h4 class="font-bold text-blue-800 mb-2">Nguyên tắc phối trộn</h4>
+                        <ul class="list-disc list-inside text-sm text-gray-600 space-y-1">
+                            <li>Cân bằng năng lượng và protein (Tỷ lệ C/P).</li>
+                            <li>Đảm bảo đủ Axit amin thiết yếu (Lysine, Methionine).</li>
+                            <li>Bổ sung khoáng đa lượng và vi lượng phù hợp.</li>
+                            <li>Tối ưu hóa chi phí dựa trên nguồn nguyên liệu sẵn có.</li>
+                        </ul>
+                    </div>
+                    <div class="bg-green-50 p-4 rounded border border-green-100">
+                        <h4 class="font-bold text-green-800 mb-2">Đối tượng áp dụng</h4>
+                        <ul class="list-disc list-inside text-sm text-gray-600 space-y-1">
+                            <li>Gia súc: Heo con, heo thịt, bò thịt.</li>
+                            <li>Gia cầm: Gà thịt, gà đẻ, vịt.</li>
+                            <li>Thủy sản: Cá tra, cá rô phi, tôm thẻ chân trắng.</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <footer class="bg-gray-800 text-white py-6 mt-8">
+        <div class="container mx-auto px-4 text-center">
+            <p>&copy; 2023 VET-AQUA MIX PRO. All rights reserved.</p>
+            <p class="text-gray-400 text-sm mt-2">Dữ liệu tham khảo cho mục đích giáo dục và nghiên cứu.</p>
+        </div>
+    </footer>
+
+    <!-- JavaScript Application Logic -->
+    <script>
+        // 1. DATA: Ingredients (100g basis converted to logic usage)
+        // nutrients: protein (%), energy (Kcal/kg), lysine (%), calcium (%), phosphorus (%)
+        const ingredientsData = [
+            { id: 'corn', name: 'Bắp hạt (Ngô)', protein: 8.5, energy: 3350, lysine: 0.24, ca: 0.02, p: 0.28, price: 6500 },
+            { id: 'broken_rice', name: 'Tấm gạo', protein: 7.5, energy: 3200, lysine: 0.25, ca: 0.04, p: 0.1, price: 8000 },
+            { id: 'rice_bran', name: 'Cám gạo', protein: 12.0, energy: 2600, lysine: 0.55, ca: 0.06, p: 1.4, price: 5500 },
+            { id: 'soybean_meal', name: 'Khô đậu tương', protein: 46.0, energy: 2500, lysine: 2.90, ca: 0.30, p: 0.65, price: 14000 },
+            { id: 'fish_meal', name: 'Bột cá (60% đạm)', protein: 60.0, energy: 2800, lysine: 4.50, ca: 5.00, p: 3.00, price: 32000 },
+            { id: 'meat_bone_meal', name: 'Bột thịt xương', protein: 50.0, energy: 2600, lysine: 2.60, ca: 10.0, p: 5.0, price: 18000 },
+            { id: 'wheat_bran', name: 'Cám mì', protein: 15.0, energy: 2100, lysine: 0.60, ca: 0.12, p: 0.90, price: 6200 },
+            { id: 'oil', name: 'Dầu ăn / Mỡ', protein: 0.0, energy: 8800, lysine: 0.0, ca: 0.0, p: 0.0, price: 28000 },
+            { id: 'premix_khoang', name: 'Premix Khoáng', protein: 0.0, energy: 0, lysine: 0.0, ca: 20.0, p: 10.0, price: 45000 },
+            { id: 'premix_vit', name: 'Premix Vitamin', protein: 0.0, energy: 0, lysine: 0.0, ca: 0.0, p: 0.0, price: 120000 },
+            { id: 'lysine', name: 'L-Lysine HCl', protein: 98.0, energy: 4000, lysine: 78.0, ca: 0.0, p: 0.0, price: 42000 },
+            { id: 'methionine', name: 'DL-Methionine', protein: 58.0, energy: 5000, lysine: 0.0, ca: 0.0, p: 0.0, price: 85000 },
+            { id: 'calcium_carb', name: 'Bột đá (CaCO3)', protein: 0.0, energy: 0, lysine: 0.0, ca: 38.0, p: 0.0, price: 1500 },
+            { id: 'mcp', name: 'MCP (Monocalcium P)', protein: 0.0, energy: 0, lysine: 0.0, ca: 16.0, p: 21.0, price: 18000 }
+        ];
+
+        // 2. DATA: Requirements (Standards)
+        const requirements = {
+            piglet: { name: "Heo Con (15-30kg)", cp: 18.0, me: 3200, lysine: 1.15, ca: 0.70, p: 0.60 },
+            pig_grower: { name: "Heo Thịt (30-60kg)", cp: 16.0, me: 3100, lysine: 0.95, ca: 0.60, p: 0.50 },
+            broiler: { name: "Gà Thịt (0-3 tuần)", cp: 22.0, me: 3000, lysine: 1.30, ca: 1.00, p: 0.45 },
+            pangasius: { name: "Cá Tra (Giống)", cp: 28.0, me: 2900, lysine: 1.50, ca: 1.0, p: 0.8 },
+            shrimp: { name: "Tôm Thẻ (Post)", cp: 38.0, me: 3400, lysine: 2.10, ca: 2.0, p: 1.1 }
+        };
+
+        // State
+        let selectedIngredients = []; // Array of { id, percent }
+        let currentRequirements = requirements.piglet;
+
+        // Init
+        document.addEventListener('DOMContentLoaded', () => {
+            renderIngredientLibrary();
+            renderPriceTable();
+            updateRequirements();
+            calculateMix(); // initial empty calc
+        });
+
+        // 3. UI Functions
+        function switchTab(tabName) {
+            ['mix', 'price', 'info'].forEach(t => {
+                document.getElementById(`content-${t}`).classList.add('hidden');
+                document.getElementById(`tab-${t}`).classList.remove('tab-active', 'border-b-3', 'border-sky-500', 'text-sky-600', 'font-bold');
+                document.getElementById(`tab-${t}`).classList.add('border-transparent');
+            });
+
+            document.getElementById(`content-${tabName}`).classList.remove('hidden');
+            const activeBtn = document.getElementById(`tab-${tabName}`);
+            activeBtn.classList.add('tab-active');
+            activeBtn.classList.remove('border-transparent');
+        }
+
+        function renderIngredientLibrary() {
+            const container = document.getElementById('ingredientLibrary');
+            container.innerHTML = '';
+            ingredientsData.forEach(ing => {
+                const div = document.createElement('div');
+                div.className = "flex justify-between items-center bg-gray-50 p-2 rounded hover:bg-sky-50 cursor-pointer border border-gray-100";
+                div.onclick = () => addIngredientToMix(ing.id);
+                div.innerHTML = `
+                    <span class="font-medium text-sm text-gray-700">${ing.name}</span>
+                    <span class="text-xs text-gray-400 font-mono">${ing.price.toLocaleString()}đ</span>
+                    <button class="text-green-600 font-bold px-2 hover:bg-green-200 rounded">+</button>
+                `;
+                container.appendChild(div);
+            });
+        }
+
+        function renderPriceTable() {
+            const tbody = document.getElementById('priceTableBody');
+            tbody.innerHTML = '';
+            ingredientsData.forEach(ing => {
+                const tr = document.createElement('tr');
+                tr.className = "hover:bg-gray-50";
+                tr.innerHTML = `
+                    <td class="p-3 border font-medium">${ing.name}</td>
+                    <td class="p-3 border">${ing.protein}%</td>
+                    <td class="p-3 border">${ing.energy}</td>
+                    <td class="p-3 border font-mono text-green-700">${ing.price.toLocaleString()}</td>
+                    <td class="p-3 border">
+                        <input type="number" value="${ing.price}" onchange="updatePrice('${ing.id}', this.value)" 
+                               class="w-full border rounded px-2 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-sky-500">
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        // 4. Logic Functions
+        function updateRequirements() {
+            const type = document.getElementById('animalSelect').value;
+            currentRequirements = requirements[type];
+            calculateMix(); // Recalculate bars based on new target
+        }
+
+        function addIngredientToMix(id) {
+            if (selectedIngredients.find(x => x.id === id)) return; // Already exists
+            
+            selectedIngredients.push({ id: id, percent: 0 });
+            renderMixTable();
+        }
+
+        function removeIngredient(id) {
+            selectedIngredients = selectedIngredients.filter(x => x.id !== id);
+            renderMixTable();
+            calculateMix();
+        }
+
+        function updatePercent(id, value) {
+            const item = selectedIngredients.find(x => x.id === id);
+            if (item) {
+                item.percent = parseFloat(value) || 0;
+            }
+            calculateMix();
+        }
+
+        function updatePrice(id, newPrice) {
+            const ing = ingredientsData.find(x => x.id === id);
+            if (ing) {
+                ing.price = parseInt(newPrice) || 0;
+            }
+            // Update UI elements that depend on price
+            renderIngredientLibrary(); 
+            calculateMix(); // Re-calc cost
+        }
+
+        function clearAll() {
+            if(confirm("Bạn có chắc chắn muốn xóa toàn bộ công thức đang phối?")) {
+                selectedIngredients = [];
+                renderMixTable();
+                calculateMix();
+            }
+        }
+
+        function renderMixTable() {
+            const tbody = document.getElementById('mixTableBody');
+            const emptyState = document.getElementById('emptyState');
+            
+            if (selectedIngredients.length === 0) {
+                tbody.innerHTML = '';
+                emptyState.classList.remove('hidden');
+                return;
+            }
+            
+            emptyState.classList.add('hidden');
+            tbody.innerHTML = '';
+
+            const batchSize = parseFloat(document.getElementById('batchSize').value) || 1000;
+
+            selectedIngredients.forEach(item => {
+                const ingInfo = ingredientsData.find(x => x.id === item.id);
+                const kg = (item.percent / 100) * batchSize;
+                const cost = kg * ingInfo.price;
+
+                const tr = document.createElement('tr');
+                tr.className = "border-b hover:bg-gray-50";
+                tr.innerHTML = `
+                    <td class="px-3 py-2 text-gray-700">${ingInfo.name}</td>
+                    <td class="px-3 py-2">
+                        <input type="number" min="0" max="100" step="0.1" value="${item.percent}" 
+                               oninput="updatePercent('${item.id}', this.value)"
+                               class="w-20 border rounded px-1 py-1 text-center font-bold text-sky-700 bg-white focus:ring-1 focus:ring-sky-500">
+                    </td>
+                    <td class="px-3 py-2 text-gray-600">${kg.toFixed(1)}</td>
+                    <td class="px-3 py-2 text-gray-600 text-xs">${ingInfo.price.toLocaleString()}</td>
+                    <td class="px-3 py-2 text-center">
+                        <button onclick="removeIngredient('${item.id}')" class="text-red-500 hover:text-red-700">✕</button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function calculateMix() {
+            let totalPercent = 0;
+            let totalCost = 0;
+            
+            // Nutrients accumulators
+            let actualCP = 0;
+            let actualME = 0;
+            let actualLys = 0;
+            let actualCa = 0;
+            let actualP = 0;
+
+            selectedIngredients.forEach(item => {
+                const ing = ingredientsData.find(x => x.id === item.id);
+                const ratio = item.percent / 100;
+                
+                totalPercent += item.percent;
+                totalCost += ratio * ing.price; // Cost per kg of mix
+                
+                actualCP += ing.protein * ratio;
+                actualME += ing.energy * ratio;
+                actualLys += ing.lysine * ratio;
+                actualCa += ing.ca * ratio;
+                actualP += ing.p * ratio;
+            });
+
+            // Update Total Percent UI
+            const totalEl = document.getElementById('totalPercent');
+            totalEl.textContent = `Tổng: ${totalPercent.toFixed(1)}%`;
+            if (Math.abs(totalPercent - 100) < 0.1) {
+                totalEl.className = "font-bold text-green-600";
+            } else {
+                totalEl.className = "font-bold text-red-500";
+            }
+
+            // Update Cost UI
+            document.getElementById('costPerKg').textContent = Math.round(totalCost).toLocaleString() + " đ";
+            const batchSize = parseFloat(document.getElementById('batchSize').value) || 1000;
+            document.getElementById('totalBatchCost').textContent = Math.round(totalCost * batchSize).toLocaleString() + " đ";
+
+            // Update Charts
+            updateChart('cp', actualCP, currentRequirements.cp, '%');
+            updateChart('me', actualME, currentRequirements.me, ' Kcal');
+            updateChart('lys', actualLys, currentRequirements.lysine, '%');
+            updateChart('ca', actualCa, currentRequirements.ca, '%');
+            updateChart('p', actualP, currentRequirements.p, '%');
+        }
+
+        function updateChart(id, actual, required, unit) {
+            // Label
+            document.getElementById(`label-${id}`).textContent = `${actual.toFixed(2)}${unit} / ${required}${unit}`;
+            
+            // Bar Width (normalize to around the required value. Let's say required is 70% width)
+            // If actual == required, width should align with marker.
+            // Let's set max scale as 1.5 * required
+            const max = required * 1.5;
+            let percentWidth = (actual / max) * 100;
+            if (percentWidth > 100) percentWidth = 100;
+            
+            document.getElementById(`bar-${id}`).style.width = `${percentWidth}%`;
+            
+            // Color logic
+            const bar = document.getElementById(`bar-${id}`);
+            if (actual < required * 0.9) bar.className = bar.className.replace(/bg-\w+-600/, 'bg-red-500').replace(/bg-\w+-500/, 'bg-red-500'); // Low
+            else if (actual > required * 1.15) bar.className = bar.className.replace(/bg-\w+-600/, 'bg-yellow-500').replace(/bg-\w+-500/, 'bg-yellow-500'); // High
+            else bar.className = bar.className.replace(/bg-red-500/, 'bg-green-500').replace(/bg-yellow-500/, 'bg-green-500'); // Good
+
+            // Marker Position
+            // The marker represents the 'required' value. 
+            // In our scale where max = 1.5 * required, the marker is at (required / max) * 100 = 66.66%
+            document.getElementById(`marker-${id}`).style.left = `${(required / max) * 100}%`;
+        }
+    </script>
+</body>
+</html>
