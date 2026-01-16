@@ -1,0 +1,930 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Phối hợp khẩu phần thức ăn – Gia súc, gia cầm & Thủy sản</title>
+  <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+  <style>
+    :root{--glass: rgba(255,255,255,.72);--glass2: rgba(255,255,255,.55)}
+    body{background: radial-gradient(1200px 600px at 10% 0%, #dbeafe 0%, transparent 60%),
+                 radial-gradient(900px 500px at 90% 10%, #dcfce7 0%, transparent 55%),
+                 radial-gradient(800px 500px at 50% 100%, #fef9c3 0%, transparent 60%),
+                 linear-gradient(180deg,#f8fafc 0%, #ffffff 65%, #f8fafc 100%);
+         min-height:100vh;}
+
+    /* Moving animals */
+    .sky{position:fixed; inset:0; pointer-events:none; overflow:hidden;}
+    .animal{position:absolute; font-size: clamp(22px, 3vw, 42px); filter: drop-shadow(0 10px 12px rgba(0,0,0,.12)); opacity:.92;}
+    .animal.small{font-size: clamp(18px, 2.2vw, 34px); opacity:.85;}
+    .animal.tiny{font-size: clamp(14px, 1.6vw, 26px); opacity:.78;}
+
+    @keyframes drift1{0%{transform:translate(-15vw,10vh) rotate(-6deg)} 50%{transform:translate(55vw,14vh) rotate(6deg)} 100%{transform:translate(115vw,8vh) rotate(-4deg)}}
+    @keyframes drift2{0%{transform:translate(110vw,30vh) scaleX(-1)} 50%{transform:translate(45vw,36vh) scaleX(-1)} 100%{transform:translate(-20vw,32vh) scaleX(-1)}}
+    @keyframes drift3{0%{transform:translate(-20vw,70vh) rotate(2deg)} 50%{transform:translate(35vw,66vh) rotate(-3deg)} 100%{transform:translate(120vw,72vh) rotate(2deg)}}
+    @keyframes swim{0%{transform:translate(-25vw,52vh)} 50%{transform:translate(40vw,48vh)} 100%{transform:translate(125vw,54vh)}}
+    @keyframes bob{0%,100%{transform:translateY(0)} 50%{transform:translateY(-10px)}}
+
+    .a1{animation: drift1 26s linear infinite;}
+    .a2{animation: drift2 32s linear infinite;}
+    .a3{animation: drift3 28s linear infinite;}
+    .a4{animation: swim 22s linear infinite;}
+    .bob{animation: bob 2.8s ease-in-out infinite;}
+
+    /* Cards */
+    .glass{background: var(--glass); backdrop-filter: blur(10px); border: 1px solid rgba(15,23,42,.10)}
+    .glass2{background: var(--glass2); backdrop-filter: blur(10px); border: 1px solid rgba(15,23,42,.10)}
+
+    /* Table */
+    .table-wrap{overflow:auto; border-radius: 14px;}
+    table{border-collapse: separate; border-spacing:0; min-width: 920px; width:100%;}
+    th,td{padding:.55rem .6rem; border-bottom: 1px solid rgba(2,6,23,.08)}
+    thead th{position: sticky; top:0; z-index:1; background: rgba(255,255,255,.78); backdrop-filter: blur(8px);}
+
+    /* Inputs */
+    input[type="number"], input[type="text"], select{outline:none;}
+
+    /* Print */
+    @media print{
+      .no-print{display:none !important}
+      body{background:#fff}
+      .glass,.glass2{background:#fff; backdrop-filter:none;}
+      table{min-width:0}
+    }
+  </style>
+</head>
+<body class="text-slate-900">
+  <!-- Moving animals layer -->
+  <div class="sky" aria-hidden="true">
+    <div class="animal a1" style="top:6vh; left:-20vw">🐔</div>
+    <div class="animal small a2" style="top:22vh; left:110vw">🐷</div>
+    <div class="animal a3" style="top:64vh; left:-20vw">🐄</div>
+    <div class="animal small a4" style="top:48vh; left:-25vw">🐟</div>
+    <div class="animal tiny bob" style="top:12vh; left:16vw">🦐</div>
+    <div class="animal tiny bob" style="top:78vh; left:78vw">🦆</div>
+  </div>
+
+  <header class="no-print sticky top-0 z-40 border-b border-slate-200/60 bg-white/60 backdrop-blur">
+    <div class="max-w-7xl mx-auto px-4 py-3 flex items-center gap-3">
+      <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-600 to-emerald-500 text-white grid place-items-center font-bold">FM</div>
+      <div class="flex-1">
+        <h1 class="text-base sm:text-lg font-semibold leading-tight">Trình phối hợp khẩu phần thức ăn (gia súc, gia cầm & thủy sản)</h1>
+        <p class="text-xs sm:text-sm text-slate-600">Công cụ mẫu cho chuyên gia xây dựng công thức – có bảng giá, dinh dưỡng ước tính và gợi ý theo giai đoạn</p>
+      </div>
+      <div class="flex items-center gap-2">
+        <button id="btnPrint" class="hidden sm:inline-flex px-3 py-2 rounded-xl bg-slate-900 text-white text-sm hover:bg-slate-800">In / Xuất PDF</button>
+        <button id="btnReset" class="px-3 py-2 rounded-xl bg-white border border-slate-200 text-sm hover:bg-slate-50">Làm mới</button>
+      </div>
+    </div>
+  </header>
+
+  <main class="max-w-7xl mx-auto px-4 py-6">
+    <section class="grid lg:grid-cols-3 gap-4">
+      <div class="lg:col-span-2 glass rounded-2xl p-4">
+        <div class="flex flex-wrap items-center gap-3 justify-between">
+          <div>
+            <h2 class="text-lg font-semibold">Bộ tạo công thức phối trộn</h2>
+            <p class="text-sm text-slate-600">Chọn đối tượng nuôi & giai đoạn, rồi tùy chỉnh nguyên liệu. Công cụ sẽ tính <span class="font-medium">tổng %</span>, <span class="font-medium">giá/kg</span> và <span class="font-medium">dinh dưỡng ước tính</span>.</p>
+          </div>
+          <div class="flex items-center gap-2">
+            <button id="btnLoadSample" class="px-3 py-2 rounded-xl bg-emerald-600 text-white text-sm hover:bg-emerald-700">Nạp công thức mẫu</button>
+            <button id="btnAddRow" class="px-3 py-2 rounded-xl bg-white border border-slate-200 text-sm hover:bg-slate-50">+ Thêm nguyên liệu</button>
+          </div>
+        </div>
+
+        <div class="mt-4 grid md:grid-cols-3 gap-3">
+          <div class="glass2 rounded-2xl p-3">
+            <label class="text-xs font-medium text-slate-700">Đối tượng</label>
+            <select id="species" class="mt-1 w-full px-3 py-2 rounded-xl border border-slate-200 bg-white">
+              <option value="chicken">Gà (gia cầm)</option>
+              <option value="pig">Heo (lợn)</option>
+              <option value="cattle">Bò</option>
+              <option value="fish">Cá (thủy sản)</option>
+            </select>
+          </div>
+          <div class="glass2 rounded-2xl p-3">
+            <label class="text-xs font-medium text-slate-700">Giai đoạn / độ tuổi</label>
+            <select id="stage" class="mt-1 w-full px-3 py-2 rounded-xl border border-slate-200 bg-white"></select>
+          </div>
+          <div class="glass2 rounded-2xl p-3">
+            <label class="text-xs font-medium text-slate-700">Khối lượng phối trộn (kg/mẻ)</label>
+            <input id="batchKg" type="number" min="1" step="1" value="100" class="mt-1 w-full px-3 py-2 rounded-xl border border-slate-200 bg-white" />
+          </div>
+        </div>
+
+        <div class="mt-4 table-wrap glass2">
+          <table class="text-sm">
+            <thead>
+              <tr class="text-left">
+                <th style="width:220px">Nguyên liệu</th>
+                <th style="width:120px">Tỷ lệ (%)</th>
+                <th style="width:140px">Giá (đ/kg)</th>
+                <th style="width:110px">ME (kcal/kg)</th>
+                <th style="width:90px">CP (%)</th>
+                <th style="width:90px">Lys (%)</th>
+                <th style="width:90px">Met (%)</th>
+                <th style="width:90px">Ca (%)</th>
+                <th style="width:90px">P khả dụng (%)</th>
+                <th style="width:120px">Thao tác</th>
+              </tr>
+            </thead>
+            <tbody id="rows"></tbody>
+          </table>
+        </div>
+
+        <div class="mt-4 grid md:grid-cols-2 gap-3">
+          <div class="glass2 rounded-2xl p-3">
+            <div class="flex items-center justify-between">
+              <h3 class="font-semibold">Tổng hợp công thức</h3>
+              <span id="sumBadge" class="text-xs px-2 py-1 rounded-full bg-slate-900 text-white">—</span>
+            </div>
+            <div class="mt-3 grid grid-cols-2 gap-2 text-sm">
+              <div class="p-2 rounded-xl bg-white/70 border border-slate-200/70">
+                <div class="text-xs text-slate-600">Tổng tỷ lệ</div>
+                <div class="font-semibold" id="totalPct">0%</div>
+              </div>
+              <div class="p-2 rounded-xl bg-white/70 border border-slate-200/70">
+                <div class="text-xs text-slate-600">Giá thành (đ/kg)</div>
+                <div class="font-semibold" id="costPerKg">0</div>
+              </div>
+              <div class="p-2 rounded-xl bg-white/70 border border-slate-200/70">
+                <div class="text-xs text-slate-600">Giá/mẻ (đ)</div>
+                <div class="font-semibold" id="costPerBatch">0</div>
+              </div>
+              <div class="p-2 rounded-xl bg-white/70 border border-slate-200/70">
+                <div class="text-xs text-slate-600">Khối lượng/mẻ (kg)</div>
+                <div class="font-semibold" id="batchOut">0</div>
+              </div>
+            </div>
+            <div class="mt-3 text-xs text-slate-600">
+              Lưu ý: Dinh dưỡng là <span class="font-medium">ước tính tuyến tính</span> theo dữ liệu thành phần điển hình; cần hiệu chỉnh theo phân tích nguyên liệu thực tế, quy đổi chất khô, hệ số tiêu hóa và mục tiêu từng giống/điều kiện.
+            </div>
+          </div>
+
+          <div class="glass2 rounded-2xl p-3">
+            <div class="flex items-center justify-between gap-2">
+              <h3 class="font-semibold">So với nhu cầu tham chiếu</h3>
+              <button id="btnAutoBalance" class="px-3 py-2 rounded-xl bg-blue-600 text-white text-xs hover:bg-blue-700">Gợi ý cân bằng nhanh</button>
+            </div>
+            <div class="mt-3 grid grid-cols-2 gap-2 text-sm">
+              <div class="p-2 rounded-xl bg-white/70 border border-slate-200/70">
+                <div class="text-xs text-slate-600">ME (kcal/kg)</div>
+                <div class="font-semibold" id="meVal">—</div>
+                <div class="text-xs" id="meNeed">—</div>
+              </div>
+              <div class="p-2 rounded-xl bg-white/70 border border-slate-200/70">
+                <div class="text-xs text-slate-600">Đạm thô CP (%)</div>
+                <div class="font-semibold" id="cpVal">—</div>
+                <div class="text-xs" id="cpNeed">—</div>
+              </div>
+              <div class="p-2 rounded-xl bg-white/70 border border-slate-200/70">
+                <div class="text-xs text-slate-600">Lys (%)</div>
+                <div class="font-semibold" id="lysVal">—</div>
+                <div class="text-xs" id="lysNeed">—</div>
+              </div>
+              <div class="p-2 rounded-xl bg-white/70 border border-slate-200/70">
+                <div class="text-xs text-slate-600">Met (%)</div>
+                <div class="font-semibold" id="metVal">—</div>
+                <div class="text-xs" id="metNeed">—</div>
+              </div>
+              <div class="p-2 rounded-xl bg-white/70 border border-slate-200/70">
+                <div class="text-xs text-slate-600">Ca (%)</div>
+                <div class="font-semibold" id="caVal">—</div>
+                <div class="text-xs" id="caNeed">—</div>
+              </div>
+              <div class="p-2 rounded-xl bg-white/70 border border-slate-200/70">
+                <div class="text-xs text-slate-600">P khả dụng (%)</div>
+                <div class="font-semibold" id="pVal">—</div>
+                <div class="text-xs" id="pNeed">—</div>
+              </div>
+            </div>
+            <div class="mt-3 text-xs text-slate-600">
+              Nhu cầu tham chiếu được tổng hợp theo các tài liệu/khuyến nghị phổ biến (NRC, FAO và giáo trình đại học). Khi áp dụng thực tế cần căn theo giống, mật độ, nhiệt độ, mục tiêu tăng trưởng/đẻ trứng, và mức độ an toàn sinh học.
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <aside class="glass rounded-2xl p-4">
+        <div class="flex items-start justify-between gap-2">
+          <div>
+            <h2 class="text-lg font-semibold">Giá nguyên liệu</h2>
+            <p class="text-sm text-slate-600">Cập nhật theo thời điểm (mô phỏng/nhập tay) và áp dụng vào công thức.</p>
+          </div>
+          <span id="priceStamp" class="text-xs px-2 py-1 rounded-full bg-slate-900 text-white">—</span>
+        </div>
+
+        <div class="mt-3 flex flex-wrap gap-2">
+          <button id="btnSimUpdate" class="px-3 py-2 rounded-xl bg-white border border-slate-200 text-sm hover:bg-slate-50">Cập nhật (mô phỏng)</button>
+          <button id="btnApplyPrices" class="px-3 py-2 rounded-xl bg-blue-600 text-white text-sm hover:bg-blue-700">Áp dụng vào công thức</button>
+          <button id="btnExport" class="px-3 py-2 rounded-xl bg-slate-900 text-white text-sm hover:bg-slate-800">Xuất JSON</button>
+          <label class="px-3 py-2 rounded-xl bg-white border border-slate-200 text-sm hover:bg-slate-50 cursor-pointer">
+            Nhập JSON
+            <input id="importJson" type="file" accept="application/json" class="hidden" />
+          </label>
+        </div>
+
+        <div class="mt-3 table-wrap glass2">
+          <table class="text-sm" style="min-width: 0;">
+            <thead>
+              <tr class="text-left">
+                <th>Nguyên liệu</th>
+                <th>Giá (đ/kg)</th>
+              </tr>
+            </thead>
+            <tbody id="priceTable"></tbody>
+          </table>
+        </div>
+
+        <div class="mt-4">
+          <h3 class="font-semibold">Nguồn tham khảo chính thống</h3>
+          <ul class="mt-2 space-y-2 text-sm text-slate-700 list-disc pl-5">
+            <li><a class="text-blue-700 hover:underline" target="_blank" href="https://nap.nationalacademies.org/">NRC / National Academies Press</a> (tài liệu nhu cầu dinh dưỡng gia cầm, heo, bò)</li>
+            <li><a class="text-blue-700 hover:underline" target="_blank" href="https://www.fao.org/">FAO</a> (hướng dẫn nuôi dưỡng, thức ăn chăn nuôi & thủy sản)</li>
+            <li><a class="text-blue-700 hover:underline" target="_blank" href="https://www.ilri.org/">ILRI</a> (tài liệu về chăn nuôi, khẩu phần, năng suất)</li>
+            <li>Giáo trình & bài giảng dinh dưỡng vật nuôi của các trường/viện trong ngành (ĐH Nông Lâm, Học viện Nông nghiệp, Viện Chăn nuôi…)</li>
+          </ul>
+          <p class="mt-3 text-xs text-slate-600">Trang này là công cụ hỗ trợ lập công thức. Khi dùng cho sản xuất cần kiểm soát chất lượng nguyên liệu, độc tố nấm mốc, cân đối axit amin tiêu hóa, khoáng vi lượng, và tuân thủ quy định an toàn thức ăn chăn nuôi.</p>
+        </div>
+      </aside>
+    </section>
+
+    <section class="mt-4 glass rounded-2xl p-4">
+      <div class="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <h2 class="text-lg font-semibold">Hướng dẫn nhanh</h2>
+          <p class="text-sm text-slate-600">Chọn công thức mẫu, điều chỉnh theo thị trường & mục tiêu. Có thể thêm nguyên liệu mới và lưu/nhập JSON.</p>
+        </div>
+        <div class="flex gap-2 no-print">
+          <button id="btnSaveLocal" class="px-3 py-2 rounded-xl bg-white border border-slate-200 text-sm hover:bg-slate-50">Lưu vào trình duyệt</button>
+          <button id="btnLoadLocal" class="px-3 py-2 rounded-xl bg-white border border-slate-200 text-sm hover:bg-slate-50">Tải từ trình duyệt</button>
+        </div>
+      </div>
+      <div class="mt-3 grid md:grid-cols-3 gap-3 text-sm">
+        <div class="glass2 rounded-2xl p-3">
+          <div class="font-semibold">1) Chọn đối tượng & giai đoạn</div>
+          <div class="text-slate-600 mt-1">Ví dụ: <span class="font-medium">Gà thịt – Starter</span>, <span class="font-medium">Heo – Grower</span>, <span class="font-medium">Bò – vỗ béo</span>, hoặc <span class="font-medium">Cá – tăng trưởng</span>.</div>
+        </div>
+        <div class="glass2 rounded-2xl p-3">
+          <div class="font-semibold">2) Chỉnh % và giá nguyên liệu</div>
+          <div class="text-slate-600 mt-1">Tổng % nên = <span class="font-medium">100</span>. Giá có thể cập nhật theo thời điểm; bấm <span class="font-medium">Áp dụng vào công thức</span>.</div>
+        </div>
+        <div class="glass2 rounded-2xl p-3">
+          <div class="font-semibold">3) Kiểm tra dinh dưỡng & cân bằng</div>
+          <div class="text-slate-600 mt-1">Dùng <span class="font-medium">Gợi ý cân bằng nhanh</span> (heuristic) để tăng/giảm bắp/khô dầu đậu nành/dầu/premix…</div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="no-print max-w-7xl mx-auto px-4 pb-8 pt-2 text-xs text-slate-600">
+    <div class="flex flex-wrap items-center justify-between gap-2">
+      <div>© <span id="year"></span> FeedMix Lab – Demo single-page. Dữ liệu thành phần là giá trị điển hình để minh họa.</div>
+      <div class="text-slate-500">Mẹo: Nhấn In / Xuất PDF để lưu công thức.</div>
+    </div>
+  </footer>
+
+  <script>
+    // ---------- Data (typical composition; illustrative) ----------
+    // Units: price VND/kg; ME kcal/kg; others are % as-fed.
+    const ingredientDB = {
+      "Bắp (ngô)": { price: 8500, me: 3350, cp: 8.5, lys: 0.26, met: 0.18, ca: 0.03, p: 0.09 },
+      "Tấm (gạo)": { price: 8200, me: 3200, cp: 7.5, lys: 0.28, met: 0.16, ca: 0.02, p: 0.08 },
+      "Cám gạo": { price: 9000, me: 2600, cp: 13.0, lys: 0.55, met: 0.25, ca: 0.08, p: 0.35 },
+      "Khô dầu đậu nành": { price: 14500, me: 2450, cp: 46.0, lys: 2.90, met: 0.62, ca: 0.29, p: 0.62 },
+      "Bột cá": { price: 26000, me: 2700, cp: 60.0, lys: 4.50, met: 1.60, ca: 5.00, p: 2.80 },
+      "Dầu thực vật": { price: 26000, me: 8800, cp: 0.0, lys: 0.0, met: 0.0, ca: 0.00, p: 0.00 },
+      "Bột đá (CaCO3)": { price: 1200, me: 0, cp: 0.0, lys: 0.0, met: 0.0, ca: 38.0, p: 0.00 },
+      "DCP (Dicalcium phosphate)": { price: 18500, me: 0, cp: 0.0, lys: 0.0, met: 0.0, ca: 23.0, p: 18.0 },
+      "Muối (NaCl)": { price: 2500, me: 0, cp: 0.0, lys: 0.0, met: 0.0, ca: 0.00, p: 0.00 },
+      "Premix khoáng-vitamin": { price: 60000, me: 0, cp: 0.0, lys: 0.0, met: 0.0, ca: 0.00, p: 0.00 },
+      "DL-Methionine": { price: 95000, me: 0, cp: 0.0, lys: 0.0, met: 99.0, ca: 0.00, p: 0.00 },
+      "L-Lysine HCl": { price: 52000, me: 0, cp: 0.0, lys: 78.0, met: 0.0, ca: 0.00, p: 0.00 },
+      "Bột mì": { price: 9800, me: 3050, cp: 12.0, lys: 0.35, met: 0.18, ca: 0.05, p: 0.13 },
+      "Khô dầu cải (canola meal)": { price: 11800, me: 2200, cp: 36.0, lys: 2.00, met: 0.70, ca: 0.70, p: 0.70 },
+      "Cám bắp (corn DDGS)": { price: 12000, me: 2800, cp: 27.0, lys: 0.95, met: 0.55, ca: 0.10, p: 0.35 },
+      "Rỉ mật": { price: 5500, me: 2400, cp: 4.0, lys: 0.10, met: 0.05, ca: 0.90, p: 0.10 },
+      "Cỏ khô (tham khảo cho bò)": { price: 2500, me: 1900, cp: 10.0, lys: 0.50, met: 0.20, ca: 0.60, p: 0.25 },
+      "Bã bia": { price: 4500, me: 2100, cp: 22.0, lys: 1.10, met: 0.35, ca: 0.30, p: 0.50 }
+    };
+
+    // Simplified requirement references per species & stage (illustrative ranges)
+    const requirements = {
+      chicken: {
+        stages: [
+          { id:"broiler_starter", name:"Gà thịt – Starter (0–3 tuần)", need:{ me: 3000, cp: 21.5, lys: 1.15, met: 0.50, ca: 0.95, p: 0.45 } },
+          { id:"broiler_grower", name:"Gà thịt – Grower (3–5 tuần)", need:{ me: 3100, cp: 19.5, lys: 1.05, met: 0.47, ca: 0.90, p: 0.42 } },
+          { id:"broiler_finisher", name:"Gà thịt – Finisher (5+ tuần)", need:{ me: 3200, cp: 18.0, lys: 0.95, met: 0.43, ca: 0.85, p: 0.40 } },
+          { id:"layer_peak", name:"Gà đẻ – Đỉnh đẻ", need:{ me: 2750, cp: 16.5, lys: 0.85, met: 0.38, ca: 3.80, p: 0.42 } }
+        ]
+      },
+      pig: {
+        stages: [
+          { id:"pig_starter", name:"Heo – Starter (7–20 kg)", need:{ me: 3300, cp: 20.0, lys: 1.35, met: 0.40, ca: 0.75, p: 0.35 } },
+          { id:"pig_grower", name:"Heo – Grower (20–50 kg)", need:{ me: 3250, cp: 18.0, lys: 1.05, met: 0.32, ca: 0.65, p: 0.30 } },
+          { id:"pig_finisher", name:"Heo – Finisher (50–100 kg)", need:{ me: 3200, cp: 16.0, lys: 0.80, met: 0.26, ca: 0.55, p: 0.25 } },
+          { id:"sow_lact", name:"Nái – Nuôi con", need:{ me: 3300, cp: 18.5, lys: 1.00, met: 0.30, ca: 0.90, p: 0.40 } }
+        ]
+      },
+      cattle: {
+        stages: [
+          { id:"calf_grow", name:"Bê – Tăng trưởng", need:{ me: 2400, cp: 16.0, lys: 0.75, met: 0.25, ca: 0.70, p: 0.35 } },
+          { id:"fattening", name:"Bò – Vỗ béo", need:{ me: 2600, cp: 13.0, lys: 0.60, met: 0.22, ca: 0.60, p: 0.30 } },
+          { id:"dairy", name:"Bò sữa – Khai thác sữa", need:{ me: 2700, cp: 16.5, lys: 0.80, met: 0.28, ca: 0.80, p: 0.40 } }
+        ]
+      },
+      fish: {
+        stages: [
+          { id:"fish_nursery", name:"Cá – Ương giống", need:{ me: 3000, cp: 34.0, lys: 1.70, met: 0.70, ca: 1.00, p: 0.60 } },
+          { id:"fish_growout", name:"Cá – Tăng trưởng", need:{ me: 3200, cp: 30.0, lys: 1.50, met: 0.65, ca: 0.90, p: 0.55 } }
+        ]
+      }
+    };
+
+    // Sample formulas (percent must sum ~100)
+    const sampleFormulas = {
+      chicken: {
+        broiler_starter: [
+          { name:"Bắp (ngô)", pct: 53 },
+          { name:"Khô dầu đậu nành", pct: 32 },
+          { name:"Bột cá", pct: 5 },
+          { name:"Dầu thực vật", pct: 3 },
+          { name:"Bột đá (CaCO3)", pct: 1.2 },
+          { name:"DCP (Dicalcium phosphate)", pct: 1.5 },
+          { name:"Muối (NaCl)", pct: 0.3 },
+          { name:"Premix khoáng-vitamin", pct: 0.5 },
+          { name:"L-Lysine HCl", pct: 0.3 },
+          { name:"DL-Methionine", pct: 0.2 }
+        ]
+      },
+      pig: {
+        pig_grower: [
+          { name:"Bắp (ngô)", pct: 58 },
+          { name:"Tấm (gạo)", pct: 10 },
+          { name:"Khô dầu đậu nành", pct: 24 },
+          { name:"Cám gạo", pct: 5 },
+          { name:"DCP (Dicalcium phosphate)", pct: 1.4 },
+          { name:"Bột đá (CaCO3)", pct: 0.9 },
+          { name:"Muối (NaCl)", pct: 0.3 },
+          { name:"Premix khoáng-vitamin", pct: 0.3 },
+          { name:"L-Lysine HCl", pct: 0.1 }
+        ]
+      },
+      cattle: {
+        fattening: [
+          { name:"Bắp (ngô)", pct: 35 },
+          { name:"Cám gạo", pct: 12 },
+          { name:"Bã bia", pct: 15 },
+          { name:"Rỉ mật", pct: 5 },
+          { name:"Cỏ khô (tham khảo cho bò)", pct: 30 },
+          { name:"Muối (NaCl)", pct: 0.5 },
+          { name:"Premix khoáng-vitamin", pct: 0.5 },
+          { name:"Bột đá (CaCO3)", pct: 2 }
+        ]
+      },
+      fish: {
+        fish_growout: [
+          { name:"Bắp (ngô)", pct: 25 },
+          { name:"Cám gạo", pct: 15 },
+          { name:"Khô dầu đậu nành", pct: 30 },
+          { name:"Bột cá", pct: 18 },
+          { name:"Dầu thực vật", pct: 5 },
+          { name:"DCP (Dicalcium phosphate)", pct: 1.2 },
+          { name:"Bột đá (CaCO3)", pct: 0.6 },
+          { name:"Muối (NaCl)", pct: 0.2 },
+          { name:"Premix khoáng-vitamin", pct: 0.5 },
+          { name:"L-Lysine HCl", pct: 0.2 },
+          { name:"DL-Methionine", pct: 0.1 }
+        ]
+      }
+    };
+
+    // ---------- State ----------
+    const state = {
+      formulaRows: [], // {name,pct,price,me,cp,lys,met,ca,p}
+      prices: {},
+      lastPriceUpdate: null
+    };
+
+    // ---------- Helpers ----------
+    const fmt = new Intl.NumberFormat('vi-VN');
+    const $ = (id) => document.getElementById(id);
+
+    function nowStamp(){
+      const d = new Date();
+      return d.toLocaleString('vi-VN', { hour12:false });
+    }
+
+    function clamp(n, a, b){ return Math.max(a, Math.min(b, n)); }
+
+    function deepClone(x){ return JSON.parse(JSON.stringify(x)); }
+
+    function getStageObj(){
+      const sp = $('species').value;
+      const st = $('stage').value;
+      const found = requirements[sp].stages.find(s => s.id === st);
+      return found || requirements[sp].stages[0];
+    }
+
+    function listIngredientNames(){
+      return Object.keys(ingredientDB);
+    }
+
+    function ensurePricesInitialized(){
+      if(Object.keys(state.prices).length) return;
+      for(const [name, v] of Object.entries(ingredientDB)) state.prices[name] = v.price;
+      state.lastPriceUpdate = new Date();
+    }
+
+    function toRow(name, pct){
+      const ref = ingredientDB[name] || {price:0, me:0, cp:0, lys:0, met:0, ca:0, p:0};
+      const price = state.prices[name] ?? ref.price ?? 0;
+      return { name, pct: +pct || 0, price: +price || 0, me: ref.me||0, cp: ref.cp||0, lys: ref.lys||0, met: ref.met||0, ca: ref.ca||0, p: ref.p||0 };
+    }
+
+    function recomputeTotals(){
+      const batchKg = +$('batchKg').value || 0;
+      const totalPct = state.formulaRows.reduce((s,r)=> s + (+r.pct||0), 0);
+
+      // Weighted sums by pct
+      const w = (key) => state.formulaRows.reduce((s,r)=> s + ((+r.pct||0)/100) * (+r[key]||0), 0);
+      const me = w('me');
+      const cp = w('cp');
+      const lys = w('lys');
+      const met = w('met');
+      const ca = w('ca');
+      const p = w('p');
+
+      const costPerKg = state.formulaRows.reduce((s,r)=> s + ((+r.pct||0)/100) * (+r.price||0), 0);
+      const batchOut = batchKg * (totalPct/100);
+      const costPerBatch = costPerKg * batchOut;
+
+      $('totalPct').textContent = totalPct.toFixed(2) + '%';
+      $('costPerKg').textContent = fmt.format(Math.round(costPerKg));
+      $('batchOut').textContent = fmt.format(Math.round(batchOut*100)/100);
+      $('costPerBatch').textContent = fmt.format(Math.round(costPerBatch));
+
+      $('meVal').textContent = Math.round(me);
+      $('cpVal').textContent = cp.toFixed(2);
+      $('lysVal').textContent = lys.toFixed(3);
+      $('metVal').textContent = met.toFixed(3);
+      $('caVal').textContent = ca.toFixed(2);
+      $('pVal').textContent = p.toFixed(3);
+
+      const need = getStageObj().need;
+      $('meNeed').textContent = `Nhu cầu: ~${need.me} kcal/kg`;
+      $('cpNeed').textContent = `Nhu cầu: ~${need.cp}%`;
+      $('lysNeed').textContent = `Nhu cầu: ~${need.lys}%`;
+      $('metNeed').textContent = `Nhu cầu: ~${need.met}%`;
+      $('caNeed').textContent = `Nhu cầu: ~${need.ca}%`;
+      $('pNeed').textContent = `Nhu cầu: ~${need.p}%`;
+
+      // Badge
+      const ok = Math.abs(totalPct - 100) <= 0.05;
+      const warn = Math.abs(totalPct - 100) <= 1.0;
+      $('sumBadge').textContent = ok ? 'OK: 100%' : (warn ? 'Gần đủ' : 'Chưa cân');
+      $('sumBadge').className = 'text-xs px-2 py-1 rounded-full text-white ' + (ok ? 'bg-emerald-600' : (warn ? 'bg-amber-600' : 'bg-rose-600'));
+
+      // highlight deficits/excess (simple)
+      paintNeed('meVal', me, need.me, 100);
+      paintNeed('cpVal', cp, need.cp, 1.0);
+      paintNeed('lysVal', lys, need.lys, 0.05);
+      paintNeed('metVal', met, need.met, 0.03);
+      paintNeed('caVal', ca, need.ca, 0.10);
+      paintNeed('pVal', p, need.p, 0.05);
+    }
+
+    function paintNeed(elId, val, need, tol){
+      const el = $(elId);
+      const diff = val - need;
+      let cls = 'text-slate-900';
+      if(Math.abs(diff) <= tol) cls = 'text-emerald-700';
+      else if(diff < 0) cls = 'text-rose-700';
+      else cls = 'text-amber-700';
+      el.className = 'font-semibold ' + cls;
+    }
+
+    function renderStageOptions(){
+      const sp = $('species').value;
+      const stSel = $('stage');
+      const prev = stSel.value;
+      stSel.innerHTML = '';
+      for(const s of requirements[sp].stages){
+        const opt = document.createElement('option');
+        opt.value = s.id;
+        opt.textContent = s.name;
+        stSel.appendChild(opt);
+      }
+      // keep previous if exists
+      if([...stSel.options].some(o => o.value === prev)) stSel.value = prev;
+      recomputeTotals();
+    }
+
+    function renderRows(){
+      const tbody = $('rows');
+      tbody.innerHTML = '';
+      const names = listIngredientNames();
+
+      state.formulaRows.forEach((r, idx) => {
+        const tr = document.createElement('tr');
+        tr.className = 'hover:bg-white/60';
+
+        const tdName = document.createElement('td');
+        const sel = document.createElement('select');
+        sel.className = 'w-full px-2 py-2 rounded-xl border border-slate-200 bg-white';
+
+        // Put current name first if custom
+        const opts = new Set(names);
+        if(!opts.has(r.name)){
+          const opt0 = document.createElement('option');
+          opt0.value = r.name;
+          opt0.textContent = r.name + ' (tự thêm)';
+          sel.appendChild(opt0);
+        }
+        for(const n of names){
+          const opt = document.createElement('option');
+          opt.value = n;
+          opt.textContent = n;
+          sel.appendChild(opt);
+        }
+        sel.value = r.name;
+        sel.addEventListener('change', () => {
+          const name = sel.value;
+          state.formulaRows[idx] = { ...toRow(name, r.pct) };
+          renderRows();
+          recomputeTotals();
+        });
+        tdName.appendChild(sel);
+
+        const tdPct = document.createElement('td');
+        tdPct.appendChild(numInput(r.pct, 0, 100, 0.01, (v)=>{ r.pct = v; recomputeTotals(); }));
+
+        const tdPrice = document.createElement('td');
+        tdPrice.appendChild(numInput(r.price, 0, 500000, 1, (v)=>{ r.price = v; recomputeTotals(); }));
+
+        const tdME = document.createElement('td');
+        tdME.appendChild(numInput(r.me, 0, 12000, 1, (v)=>{ r.me = v; recomputeTotals(); }));
+
+        const tdCP = document.createElement('td');
+        tdCP.appendChild(numInput(r.cp, 0, 90, 0.01, (v)=>{ r.cp = v; recomputeTotals(); }));
+
+        const tdLys = document.createElement('td');
+        tdLys.appendChild(numInput(r.lys, 0, 100, 0.001, (v)=>{ r.lys = v; recomputeTotals(); }));
+
+        const tdMet = document.createElement('td');
+        tdMet.appendChild(numInput(r.met, 0, 100, 0.001, (v)=>{ r.met = v; recomputeTotals(); }));
+
+        const tdCa = document.createElement('td');
+        tdCa.appendChild(numInput(r.ca, 0, 50, 0.01, (v)=>{ r.ca = v; recomputeTotals(); }));
+
+        const tdP = document.createElement('td');
+        tdP.appendChild(numInput(r.p, 0, 50, 0.001, (v)=>{ r.p = v; recomputeTotals(); }));
+
+        const tdAct = document.createElement('td');
+        const wrap = document.createElement('div');
+        wrap.className = 'flex gap-2';
+        const btnDup = document.createElement('button');
+        btnDup.className = 'px-2 py-2 rounded-xl bg-white border border-slate-200 hover:bg-slate-50';
+        btnDup.textContent = 'Nhân';
+        btnDup.addEventListener('click', ()=>{
+          state.formulaRows.splice(idx+1, 0, deepClone(r));
+          renderRows();
+          recomputeTotals();
+        });
+        const btnDel = document.createElement('button');
+        btnDel.className = 'px-2 py-2 rounded-xl bg-rose-600 text-white hover:bg-rose-700';
+        btnDel.textContent = 'Xóa';
+        btnDel.addEventListener('click', ()=>{
+          state.formulaRows.splice(idx, 1);
+          renderRows();
+          recomputeTotals();
+        });
+        wrap.appendChild(btnDup);
+        wrap.appendChild(btnDel);
+        tdAct.appendChild(wrap);
+
+        [tdName, tdPct, tdPrice, tdME, tdCP, tdLys, tdMet, tdCa, tdP, tdAct].forEach(td=>tr.appendChild(td));
+        tbody.appendChild(tr);
+      });
+
+      if(state.formulaRows.length === 0){
+        const tr = document.createElement('tr');
+        const td = document.createElement('td');
+        td.colSpan = 10;
+        td.className = 'p-4 text-center text-slate-600';
+        td.textContent = 'Chưa có nguyên liệu. Bấm “Nạp công thức mẫu” hoặc “+ Thêm nguyên liệu”.';
+        tr.appendChild(td);
+        tbody.appendChild(tr);
+      }
+    }
+
+    function numInput(value, min, max, step, onChange){
+      const input = document.createElement('input');
+      input.type = 'number';
+      input.value = (value ?? 0);
+      input.min = min;
+      input.max = max;
+      input.step = step;
+      input.className = 'w-full px-2 py-2 rounded-xl border border-slate-200 bg-white';
+      input.addEventListener('input', () => {
+        const v = clamp(parseFloat(input.value || '0'), min, max);
+        onChange(v);
+      });
+      return input;
+    }
+
+    function renderPriceTable(){
+      ensurePricesInitialized();
+      const tbody = $('priceTable');
+      tbody.innerHTML = '';
+      for(const name of Object.keys(state.prices).sort((a,b)=>a.localeCompare(b,'vi'))){
+        const tr = document.createElement('tr');
+        tr.className = 'hover:bg-white/60';
+
+        const tdN = document.createElement('td');
+        tdN.className = 'py-2';
+        tdN.textContent = name;
+
+        const tdP = document.createElement('td');
+        const inp = document.createElement('input');
+        inp.type = 'number';
+        inp.min = 0;
+        inp.step = 1;
+        inp.value = state.prices[name];
+        inp.className = 'w-full px-2 py-2 rounded-xl border border-slate-200 bg-white';
+        inp.addEventListener('input', () => {
+          state.prices[name] = Math.max(0, Math.round(+inp.value || 0));
+          state.lastPriceUpdate = new Date();
+          updatePriceStamp();
+        });
+        tdP.appendChild(inp);
+
+        tr.appendChild(tdN);
+        tr.appendChild(tdP);
+        tbody.appendChild(tr);
+      }
+      updatePriceStamp();
+    }
+
+    function updatePriceStamp(){
+      $('priceStamp').textContent = state.lastPriceUpdate ? ('Cập nhật: ' + state.lastPriceUpdate.toLocaleString('vi-VN',{hour12:false})) : 'Chưa cập nhật';
+    }
+
+    function applyPricesToFormula(){
+      ensurePricesInitialized();
+      state.formulaRows.forEach(r => {
+        if(state.prices[r.name] != null) r.price = state.prices[r.name];
+      });
+      renderRows();
+      recomputeTotals();
+    }
+
+    function loadSample(){
+      const sp = $('species').value;
+      const st = $('stage').value;
+      const pick = sampleFormulas[sp]?.[st] || sampleFormulas[sp]?.[Object.keys(sampleFormulas[sp]||{})[0]];
+      if(!pick){
+        state.formulaRows = [toRow('Bắp (ngô)', 60), toRow('Khô dầu đậu nành', 30), toRow('Premix khoáng-vitamin', 0.5)];
+      } else {
+        state.formulaRows = pick.map(x => toRow(x.name, x.pct));
+      }
+      // Ensure at least one protein source for heuristic
+      renderRows();
+      recomputeTotals();
+    }
+
+    function addEmptyRow(){
+      const first = listIngredientNames()[0] || 'Bắp (ngô)';
+      state.formulaRows.push(toRow(first, 0));
+      renderRows();
+      recomputeTotals();
+    }
+
+    // Simple heuristic balancer (not a linear program)
+    function autoBalance(){
+      if(state.formulaRows.length === 0) loadSample();
+      const need = getStageObj().need;
+
+      const findRow = (name) => state.formulaRows.find(r => r.name === name);
+      const ensureRow = (name) => {
+        let r = findRow(name);
+        if(!r){
+          r = toRow(name, 0);
+          state.formulaRows.push(r);
+        }
+        return r;
+      };
+
+      const corn = ensureRow('Bắp (ngô)');
+      const sbm = ensureRow('Khô dầu đậu nành');
+      const oil = ensureRow('Dầu thực vật');
+      const premix = ensureRow('Premix khoáng-vitamin');
+
+      // Keep premix within 0.3–1.0
+      premix.pct = clamp(premix.pct || 0.5, 0.3, 1.0);
+
+      // Make total close to 100 by adjusting corn
+      const totalPct = state.formulaRows.reduce((s,r)=> s + (+r.pct||0), 0);
+      corn.pct += (100 - totalPct);
+
+      // Iterate adjustments
+      for(let it=0; it<12; it++){
+        // recompute current
+        const w = (key) => state.formulaRows.reduce((s,r)=> s + ((+r.pct||0)/100) * (+r[key]||0), 0);
+        const me = w('me');
+        const cp = w('cp');
+        const lys = w('lys');
+        const met = w('met');
+
+        // ME: adjust oil vs corn
+        if(me < need.me - 70){
+          const delta = 0.4;
+          oil.pct = clamp((oil.pct||0) + delta, 0, 8);
+          corn.pct -= delta;
+        } else if(me > need.me + 120){
+          const delta = 0.4;
+          oil.pct = clamp((oil.pct||0) - delta, 0, 8);
+          corn.pct += delta;
+        }
+
+        // CP: adjust SBM vs corn
+        if(cp < need.cp - 0.4){
+          const delta = 0.8;
+          sbm.pct = clamp((sbm.pct||0) + delta, 0, 55);
+          corn.pct -= delta;
+        } else if(cp > need.cp + 0.8){
+          const delta = 0.6;
+          sbm.pct = clamp((sbm.pct||0) - delta, 0, 55);
+          corn.pct += delta;
+        }
+
+        // AA: add synthetic if lacking
+        const lysAdd = ensureRow('L-Lysine HCl');
+        const metAdd = ensureRow('DL-Methionine');
+
+        if(lys < need.lys - 0.03){
+          const delta = 0.05;
+          lysAdd.pct = clamp((lysAdd.pct||0) + delta, 0, 0.6);
+          corn.pct -= delta;
+        }
+        if(met < need.met - 0.02){
+          const delta = 0.03;
+          metAdd.pct = clamp((metAdd.pct||0) + delta, 0, 0.4);
+          corn.pct -= delta;
+        }
+
+        // Keep non-negative
+        corn.pct = Math.max(-5, corn.pct);
+      }
+
+      // Final normalize: scale to 100 if close
+      let sum = state.formulaRows.reduce((s,r)=> s + (+r.pct||0), 0);
+      if(sum !== 0){
+        const k = 100 / sum;
+        state.formulaRows.forEach(r => r.pct = Math.max(0, r.pct * k));
+      }
+
+      renderRows();
+      recomputeTotals();
+    }
+
+    function simulatePriceUpdate(){
+      ensurePricesInitialized();
+      // random walk +/- 0–6%
+      for(const name of Object.keys(state.prices)){
+        const base = state.prices[name];
+        const change = (Math.random()*0.12 - 0.06);
+        const next = Math.max(0, Math.round(base * (1 + change)));
+        state.prices[name] = next;
+      }
+      state.lastPriceUpdate = new Date();
+      renderPriceTable();
+    }
+
+    function exportJSON(){
+      const payload = {
+        meta: { exportedAt: new Date().toISOString(), app: 'FeedMix Lab Demo' },
+        selection: { species: $('species').value, stage: $('stage').value, batchKg: +$('batchKg').value || 100 },
+        prices: state.prices,
+        formula: state.formulaRows
+      };
+      const blob = new Blob([JSON.stringify(payload, null, 2)], {type:'application/json'});
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = `feedmix_${$('species').value}_${$('stage').value}.json`;
+      a.click();
+      URL.revokeObjectURL(a.href);
+    }
+
+    function importJSONFile(file){
+      const reader = new FileReader();
+      reader.onload = () => {
+        try{
+          const data = JSON.parse(reader.result);
+          if(data?.selection?.species) $('species').value = data.selection.species;
+          renderStageOptions();
+          if(data?.selection?.stage) $('stage').value = data.selection.stage;
+          if(data?.selection?.batchKg) $('batchKg').value = data.selection.batchKg;
+
+          if(data?.prices && typeof data.prices === 'object'){
+            state.prices = data.prices;
+            state.lastPriceUpdate = new Date();
+            renderPriceTable();
+          }
+          if(Array.isArray(data?.formula)){
+            state.formulaRows = data.formula.map(r => ({
+              name: r.name,
+              pct: +r.pct || 0,
+              price: +r.price || (state.prices[r.name] ?? ingredientDB[r.name]?.price ?? 0),
+              me: +r.me || ingredientDB[r.name]?.me || 0,
+              cp: +r.cp || ingredientDB[r.name]?.cp || 0,
+              lys: +r.lys || ingredientDB[r.name]?.lys || 0,
+              met: +r.met || ingredientDB[r.name]?.met || 0,
+              ca: +r.ca || ingredientDB[r.name]?.ca || 0,
+              p: +r.p || ingredientDB[r.name]?.p || 0
+            }));
+            renderRows();
+            recomputeTotals();
+          }
+        } catch(e){
+          alert('File JSON không hợp lệ.');
+        }
+      };
+      reader.readAsText(file);
+    }
+
+    function saveLocal(){
+      const data = {
+        selection: { species: $('species').value, stage: $('stage').value, batchKg: +$('batchKg').value || 100 },
+        prices: state.prices,
+        formula: state.formulaRows,
+        updatedAt: new Date().toISOString()
+      };
+      localStorage.setItem('feedmix_demo', JSON.stringify(data));
+      alert('Đã lưu vào trình duyệt.');
+    }
+
+    function loadLocal(){
+      const raw = localStorage.getItem('feedmix_demo');
+      if(!raw){ alert('Chưa có dữ liệu đã lưu.'); return; }
+      try{
+        const data = JSON.parse(raw);
+        if(data?.selection?.species) $('species').value = data.selection.species;
+        renderStageOptions();
+        if(data?.selection?.stage) $('stage').value = data.selection.stage;
+        if(data?.selection?.batchKg) $('batchKg').value = data.selection.batchKg;
+        if(data?.prices) state.prices = data.prices;
+        state.lastPriceUpdate = new Date();
+        renderPriceTable();
+        if(Array.isArray(data?.formula)) state.formulaRows = data.formula;
+        renderRows();
+        recomputeTotals();
+      } catch{ alert('Dữ liệu lưu bị lỗi.'); }
+    }
+
+    function resetAll(){
+      state.formulaRows = [];
+      state.prices = {};
+      state.lastPriceUpdate = null;
+      $('batchKg').value = 100;
+      $('species').value = 'chicken';
+      renderStageOptions();
+      renderPriceTable();
+      renderRows();
+      recomputeTotals();
+    }
+
+    // ---------- Events ----------
+    $('species').addEventListener('change', () => {
+      renderStageOptions();
+    });
+    $('stage').addEventListener('change', () => recomputeTotals());
+    $('batchKg').addEventListener('input', () => recomputeTotals());
+
+    $('btnLoadSample').addEventListener('click', loadSample);
+    $('btnAddRow').addEventListener('click', addEmptyRow);
+    $('btnApplyPrices').addEventListener('click', applyPricesToFormula);
+    $('btnSimUpdate').addEventListener('click', simulatePriceUpdate);
+    $('btnAutoBalance').addEventListener('click', autoBalance);
+    $('btnExport').addEventListener('click', exportJSON);
+    $('importJson').addEventListener('change', (e) => {
+      const f = e.target.files?.[0];
+      if(f) importJSONFile(f);
+      e.target.value = '';
+    });
+
+    $('btnSaveLocal').addEventListener('click', saveLocal);
+    $('btnLoadLocal').addEventListener('click', loadLocal);
+
+    $('btnReset').addEventListener('click', resetAll);
+    $('btnPrint').addEventListener('click', () => window.print());
+
+    // ---------- Init ----------
+    $('year').textContent = new Date().getFullYear();
+    renderStageOptions();
+    ensurePricesInitialized();
+    renderPriceTable();
+    loadSample();
+  </script>
+</body>
+</html>
